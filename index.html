@@ -1,6 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+    <style>
+        body { background: #0a0a0a; color: #00d4ff; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #login, #dashboard { border: 1px solid #00d4ff; padding: 20px; border-radius: 8px; }
+        input { background: #111; border: 1px solid #00d4ff; color: #fff; padding: 10px; }
+        button { background: #00d4ff; border: none; padding: 10px 20px; cursor: pointer; }
+    </style>
+</head>
 <body>
-    <pre id="payload">https://penduade.github.io/keyzack/dwn/module.py</pre>
+
+    <div id="login">
+        <h3>KeyZack Access</h3>
+        <input type="password" id="keyInput" placeholder="Enter Access Key">
+        <button onclick="checkKey()">Enter</button>
+    </div>
+
+    <div id="dashboard" style="display:none;">
+        <h1>KeyZack</h1>
+        <p>Founded: 2017</p>
+        <h3>Hits</h3>
+        <pre>https://penduade.github.io/keyzack/dwn/module.py</pre>
+    </div>
+
+    <script>
+        const SECRET_KEY = "1274dyf6@5F^D8h*CHBZy";
+
+        function checkKey() {
+            if(document.getElementById('keyInput').value === SECRET_KEY) {
+                localStorage.setItem('auth', 'true');
+                location.reload();
+            } else {
+                alert("Access Denied");
+            }
+        }
+
+        // Run this immediately to check if already logged in
+        if(localStorage.getItem('auth') === 'true') {
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+        }
+    </script>
 </body>
 </html>
